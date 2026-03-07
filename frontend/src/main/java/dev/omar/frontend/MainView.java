@@ -121,6 +121,44 @@ public class MainView extends VerticalLayout {
     }
 
 
+    /**
+     * 🔄 Send a message to backend and return a reactive Flux of token strings
+     *
+     * @param message the user input
+     * @return a Flux of token strings streamed from backend
+     */
+    private Flux<String> onAsk(String message) {
+        if (message == null || message.isEmpty()) {
+            Notification.show("Please enter a question.");
+            return Flux.empty();
+        }
+
+        return webClient.post()
+                .uri("/chat")
+                .contentType(MediaType.TEXT_PLAIN)
+                .accept(MediaType.APPLICATION_NDJSON)
+                .bodyValue(message)
+                .retrieve()
+                .bodyToFlux(new ParameterizedTypeReference<Map<String, String>>() {})
+                .handle((m, sink) -> {
+                    if (m == null || m.isEmpty()) return;
+                    String type = m.get("type");
+                    if (type != null) {
+                        switch (type) {
+                            case "token" -> {
+                                String content = m.get("content");
+                                if (content != null && !content.isEmpty()) sink.next(content);
+                            }
+                            case "error" -> sink.error(new RuntimeException(m.get("content")));
+                            case "done" -> sink.complete();
+                            default -> { /* ignore unknown types for forward-compatibility */ }
+                        }
+                    }
+                });
+    }
+
+
+
 
 
 }
