@@ -87,5 +87,40 @@ public class MainView extends VerticalLayout {
 
 
 
+    /**
+     * 🏗 Setup UI elements and layout
+     */
+    private void createViewElements() {
+
+        // Page-level styling hook
+        addClassName("cp-app");
+
+        // Configure input TextArea
+        input.setWidthFull();
+        input.addClassNames("cp-field", "cp-input");
+
+        // Configure answer TextArea
+        answer.setWidthFull();
+        answer.setReadOnly(true);
+        answer.addClassNames("cp-field", "cp-answer");
+
+        // Configure Ask button
+        ask.addClassNames("cp-btn", "neon");
+        ask.getElement().setProperty("title", "Send to backend");
+
+        // On button click, start streaming response
+        ask.addClickListener(_ -> startStream(onAsk(input.getValue())));
+
+        // Layout for actions
+        HorizontalLayout actions = new HorizontalLayout(ask);
+        actions.setWidthFull();
+        actions.addClassName("cp-actions");
+
+        // Add elements to the vertical layout
+        add(input, actions, answer);
+    }
+
+
+
 
 }
