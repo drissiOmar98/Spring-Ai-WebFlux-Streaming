@@ -159,6 +159,55 @@ public class MainView extends VerticalLayout {
 
 
 
+    /**
+     * ▶️ Start streaming a Flux of AI responses into the answer TextArea
+     *
+     * @param stringFlux the Flux stream of tokens
+     */
+    private void startStream(Flux<String> stringFlux) {
+        // Cancel previous stream if active
+        if (activeStream != null) {
+            activeStream.dispose();
+            activeStream = null;
+        }
 
+        answer.setValue("");
+        setBusy(true);
+
+        UI ui = UI.getCurrent();
+        activeStream = stringFlux
+                .doOnError(err -> ui.access(() ->
+                        Notification.show("Error: " + err.getMessage(), 6000, Notification.Position.MIDDLE)))
+                .doFinally(sig -> ui.access(() -> {
+                    setBusy(false);
+                    activeStream = null;
+                }))
+                .subscribe(chunk -> ui.access(() ->
+                        answer.setValue(answer.getValue() + chunk)));
+    }
+
+    /**
+     * 🔧 Enable/disable UI while streaming
+     *
+     * @param busy true if streaming is active
+     */
+    private void setBusy(boolean busy) {
+        ask.setEnabled(!busy);
+        getElement().getClassList().set("busy", busy);
+    }
+
+    /**
+     * ♻ Dispose active stream on view detach to avoid memory leaks
+     *
+     * @param detachEvent Vaadin detach event
+     */
+    @Override
+    protected void onDetach(DetachEvent detachEvent) {
+        if (activeStream != null) {
+            activeStream.dispose();
+            activeStream = null;
+        }
+        super.onDetach(detachEvent);
+    }
 
 }
